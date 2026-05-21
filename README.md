@@ -19,13 +19,13 @@ Se uma única letra do documento for alterada após a assinatura, o sistema dete
 ```
 central-assinatura/
 ├── backend/
-│   ├── main.py          # Endpoints da API (FastAPI)
-│   ├── crypto.py        # Lógica de criptografia (RSA + SHA-256)
-│   ├── requirements.txt # Dependências Python
-│   └── keys/            # Gerado automaticamente na primeira execução
-│       ├── private.pem  # Chave privada (não commitar em produção!)
-│       └── public.pem   # Chave pública
-└── frontend/            # Desenvolvido em separado pelo time de frontend
+│   ├── main.py          
+│   ├── crypto.py        
+│   ├── requirements.txt 
+│   └── keys/            
+│       ├── private.pem  
+│       └── public.pem   
+└── frontend/            
     └── ...
 ```
 

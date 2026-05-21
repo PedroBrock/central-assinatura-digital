@@ -76,7 +76,7 @@ O SHA-256 é uma função de hash criptográfico: qualquer alteração mínima n
 
 ```bash
 # 1. Clone o repositório
-git clone https://github.com/SEU_USUARIO/central-assinatura.git
+git clone https://github.com/PedroBrock/central-assinatura.git
 cd central-assinatura/backend
 
 # 2. (Recomendado) Crie um ambiente virtual

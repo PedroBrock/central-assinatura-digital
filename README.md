@@ -183,15 +183,6 @@ A API aceita e retorna **JSON**. O CORS está habilitado para qualquer origem (`
 
 ---
 
-## 👥 Equipe
-
-| Nome | Responsabilidade |
-|---|---|
-| [Seu nome] | Backend (API + Criptografia) |
-| [Nome do amigo] | Frontend |
-
----
-
 ## 📚 Conceitos abordados
 
 - Criptografia assimétrica (RSA)

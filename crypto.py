@@ -48,12 +48,12 @@ def assinar_documento(texto: str) -> bytes:
     chave_privada = _carregar_chave_privada()
     
     assinatura = chave_privada.sign(
-        texto.encode("utf-8"),   # passa o texto direto
+        texto.encode("utf-8"),   
         padding.PSS(
             mgf=padding.MGF1(hashes.SHA256()),
             salt_length=padding.PSS.MAX_LENGTH,
         ),
-        hashes.SHA256()          # a biblioteca calcula o hash internamente
+        hashes.SHA256()          
     )
     return assinatura
 
@@ -64,12 +64,12 @@ def validar_assinatura(texto: str, assinatura: bytes) -> bool:
     try:
         chave_publica.verify(
             assinatura,
-            texto.encode("utf-8"),   # passa o texto direto
+            texto.encode("utf-8"),  
             padding.PSS(
                 mgf=padding.MGF1(hashes.SHA256()),
                 salt_length=padding.PSS.MAX_LENGTH,
             ),
-            hashes.SHA256()          # a biblioteca calcula o hash internamente
+            hashes.SHA256()        
         )
         return True
     except Exception:

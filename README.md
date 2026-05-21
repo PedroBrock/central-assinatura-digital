@@ -193,5 +193,3 @@ A API aceita e retorna **JSON**. O CORS está habilitado para qualquer origem (`
 - Formato PEM para armazenamento de chaves
 
 ---
-
-*Projeto desenvolvido para fins acadêmicos.*

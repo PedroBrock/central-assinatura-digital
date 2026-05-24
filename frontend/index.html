@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Central de Assinatura Digital | RSA + SHA-256</title>
+  <meta name="description" content="Assine e valide documentos digitalmente com criptografia RSA e hash SHA-256." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet" />
+  <!-- PDF.js para leitura de arquivos PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #0a0d14;
+      --surface: #111520;
+      --card: #161c2d;
+      --border: #1e2a44;
+      --accent: #4f8ef7;
+      --accent2: #7c5cfc;
+      --success: #22c55e;
+      --error: #ef4444;
+      --warn: #f59e0b;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --radius: 14px;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2rem 1rem 4rem;
+    }
+
+    /* ---------- HEADER ---------- */
+    header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      background: rgba(79, 142, 247, .12);
+      border: 1px solid rgba(79, 142, 247, .3);
+      color: var(--accent);
+      font-size: .75rem;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      padding: .35rem .9rem;
+      border-radius: 999px;
+      margin-bottom: 1.2rem;
+    }
+
+    header h1 {
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      font-weight: 700;
+      background: linear-gradient(135deg, #e2e8f0 30%, var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.2;
+      margin-bottom: .6rem;
+    }
+
+    header p {
+      color: var(--muted);
+      font-size: .95rem;
+    }
+
+    /* ---------- LAYOUT ---------- */
+    .container {
+      max-width: 820px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.8rem;
+      margin-bottom: 1.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      opacity: .6;
+    }
+
+    .card-title {
+      font-size: .8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--muted);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+
+    .card-title .icon {
+      width: 22px;
+      height: 22px;
+      background: rgba(79, 142, 247, .15);
+      border-radius: 6px;
+      display: grid;
+      place-items: center;
+      font-size: .9rem;
+    }
+
+    /* ---------- UPLOAD ZONE ---------- */
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: 10px;
+      padding: 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+      margin-bottom: 1rem;
+      position: relative;
+    }
+
+    .upload-zone:hover,
+    .upload-zone.drag-over {
+      border-color: var(--accent);
+      background: rgba(79, 142, 247, .06);
+    }
+
+    .upload-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .upload-icon {
+      font-size: 2rem;
+      margin-bottom: .5rem;
+    }
+
+    .upload-text {
+      font-size: .85rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .upload-text strong {
+      color: var(--accent);
+    }
+
+    .file-tags {
+      display: flex;
+      justify-content: center;
+      gap: .4rem;
+      margin-top: .6rem;
+      flex-wrap: wrap;
+    }
+
+    .file-tag {
+      background: rgba(255, 255, 255, .06);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: .7rem;
+      font-weight: 600;
+      padding: .15rem .55rem;
+      border-radius: 5px;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+
+    /* Arquivo carregado */
+    .file-info {
+      display: none;
+      align-items: center;
+      gap: .7rem;
+      background: rgba(34, 197, 94, .08);
+      border: 1px solid rgba(34, 197, 94, .25);
+      border-radius: 9px;
+      padding: .7rem 1rem;
+      margin-bottom: 1rem;
+      font-size: .85rem;
+    }
+
+    .file-info.visible {
+      display: flex;
+    }
+
+    .file-info-name {
+      color: var(--success);
+      font-weight: 600;
+      flex: 1;
+    }
+
+    .file-info-size {
+      color: var(--muted);
+      font-size: .78rem;
+    }
+
+    .btn-remove-file {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 0 .2rem;
+      transition: color .2s;
+    }
+
+    .btn-remove-file:hover {
+      color: var(--error);
+    }
+
+    /* PDF loading overlay */
+    .pdf-loading {
+      display: none;
+      align-items: center;
+      gap: .6rem;
+      color: var(--warn);
+      font-size: .82rem;
+      margin-bottom: .8rem;
+    }
+
+    .pdf-loading.visible {
+      display: flex;
+    }
+
+    /* ---------- TEXTAREA ---------- */
+    textarea {
+      width: 100%;
+      min-height: 180px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: .95rem;
+      padding: 1rem;
+      resize: vertical;
+      outline: none;
+      transition: border-color .2s;
+      line-height: 1.6;
+    }
+
+    textarea:focus {
+      border-color: var(--accent);
+    }
+
+    textarea::placeholder {
+      color: var(--muted);
+    }
+
+    /* ---------- SIGNATURE FIELD ---------- */
+    .sig-wrap {
+      position: relative;
+      margin-top: 1rem;
+    }
+
+    .sig-label {
+      font-size: .78rem;
+      color: var(--muted);
+      margin-bottom: .4rem;
+      font-weight: 500;
+    }
+
+    .sig-textarea {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .78rem;
+      min-height: 90px;
+      color: #a5b4fc;
+      background: rgba(79, 142, 247, .05);
+      border-color: rgba(79, 142, 247, .2);
+    }
+
+    .copy-btn {
+      position: absolute;
+      top: 1.8rem;
+      right: .5rem;
+      background: rgba(79, 142, 247, .15);
+      border: 1px solid rgba(79, 142, 247, .25);
+      color: var(--accent);
+      border-radius: 7px;
+      padding: .3rem .65rem;
+      font-size: .72rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .2s, transform .1s;
+    }
+
+    .copy-btn:hover {
+      background: rgba(79, 142, 247, .28);
+    }
+
+    .copy-btn:active {
+      transform: scale(.95);
+    }
+
+    /* ---------- BUTTONS ---------- */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: .55rem;
+      font-size: .9rem;
+      font-weight: 600;
+      padding: .75rem 1.6rem;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      transition: transform .15s, box-shadow .2s, opacity .2s;
+      outline: none;
+    }
+
+    .btn:active {
+      transform: scale(.97);
+    }
+
+    .btn:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(79, 142, 247, .35);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      box-shadow: 0 6px 28px rgba(79, 142, 247, .5);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, .07);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: rgba(255, 255, 255, .12);
+    }
+
+    .btn-row {
+      display: flex;
+      gap: .75rem;
+      margin-top: 1.2rem;
+      flex-wrap: wrap;
+    }
+
+    /* ---------- SPINNER ---------- */
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, .3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      display: none;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* ---------- RESULT BANNER ---------- */
+    .result {
+      display: none;
+      align-items: center;
+      gap: .8rem;
+      padding: 1rem 1.2rem;
+      border-radius: 10px;
+      font-size: .9rem;
+      font-weight: 500;
+      margin-top: 1.2rem;
+      animation: fadeIn .35s ease;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+
+    .result.success {
+      background: rgba(34, 197, 94, .1);
+      border: 1px solid rgba(34, 197, 94, .3);
+      color: var(--success);
+    }
+
+    .result.error {
+      background: rgba(239, 68, 68, .1);
+      border: 1px solid rgba(239, 68, 68, .3);
+      color: var(--error);
+    }
+
+    .result.visible {
+      display: flex;
+    }
+
+    .result-icon {
+      font-size: 1.3rem;
+      flex-shrink: 0;
+    }
+
+    /* ---------- DIVIDER ---------- */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      color: var(--muted);
+      font-size: .78rem;
+      margin: .5rem 0 1.2rem;
+    }
+
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ---------- FOOTER ---------- */
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: .78rem;
+      margin-top: 3rem;
+    }
+
+    footer span {
+      color: var(--accent);
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+    <!-- HEADER -->
+    <header>
+      <div class="badge">🔐 RSA 2048 + SHA-256</div>
+      <h1>Central de Assinatura Digital</h1>
+      <p>Assine e valide documentos com criptografia assimétrica</p>
+    </header>
+
+    <!-- CARD: DOCUMENTO -->
+    <div class="card">
+      <div class="card-title">
+        <span class="icon">📄</span>
+        Documento
+      </div>
+
+      <!-- UPLOAD ZONE -->
+      <div class="upload-zone" id="upload-zone">
+        <input type="file" id="file-input" accept=".txt,.md,.csv,.log,.json,.xml,.html,.pdf"
+          onchange="handleFile(this.files[0])" />
+        <div class="upload-icon">📂</div>
+        <div class="upload-text">
+          <strong>Clique para enviar</strong> ou arraste um arquivo aqui<br>
+          O conteúdo será carregado automaticamente no campo abaixo
+        </div>
+        <div class="file-tags">
+          <span class="file-tag">txt</span>
+          <span class="file-tag">md</span>
+          <span class="file-tag">csv</span>
+          <span class="file-tag">json</span>
+          <span class="file-tag">xml</span>
+          <span class="file-tag">pdf</span>
+        </div>
+      </div>
+
+      <!-- FILE INFO -->
+      <div class="file-info" id="file-info">
+        <span>📎</span>
+        <span class="file-info-name" id="file-info-name"></span>
+        <span class="file-info-size" id="file-info-size"></span>
+        <button class="btn-remove-file" onclick="removerArquivo()" title="Remover arquivo">✕</button>
+      </div>
+
+      <!-- PDF LOADING -->
+      <div class="pdf-loading" id="pdf-loading">
+        <span class="spinner" style="display:block; border-top-color: var(--warn);"></span>
+        Extraindo texto do PDF…
+      </div>
+
+      <textarea id="doc-input"
+        placeholder="Cole ou digite o conteúdo do contrato / documento aqui, ou envie um arquivo acima…"></textarea>
+
+      <div class="btn-row">
+        <button id="btn-assinar" class="btn btn-primary" onclick="assinar()">
+          <span id="spin-assinar" class="spinner"></span>
+          ✍️ Assinar Documento
+        </button>
+        <button id="btn-limpar" class="btn btn-secondary" onclick="limpar()">
+          🗑️ Limpar
+        </button>
+      </div>
+
+      <!-- ASSINATURA GERADA -->
+      <div id="assinatura-section" style="display:none; margin-top:1.5rem;">
+        <div class="divider">assinatura gerada</div>
+        <div class="sig-wrap">
+          <div class="sig-label">Assinatura Base64 (RSA-PSS + SHA-256)</div>
+          <textarea id="sig-output" class="sig-textarea" readonly placeholder="A assinatura aparecerá aqui…"></textarea>
+          <button class="copy-btn" onclick="copiarAssinatura()">📋 Copiar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CARD: VALIDAÇÃO -->
+    <div class="card">
+      <div class="card-title">
+        <span class="icon">🔍</span>
+        Validar Assinatura
+      </div>
+
+      <div class="sig-label">Cole a assinatura Base64 para validar</div>
+      <div class="sig-wrap">
+        <textarea id="sig-input" class="sig-textarea" placeholder="Cole aqui a assinatura gerada…"
+          style="min-height:80px;"></textarea>
+      </div>
+
+      <div class="btn-row">
+        <button id="btn-validar" class="btn btn-primary" onclick="validar()">
+          <span id="spin-validar" class="spinner"></span>
+          🔍 Validar Assinatura
+        </button>
+      </div>
+
+      <!-- RESULTADO DA VALIDAÇÃO -->
+      <div id="resultado" class="result">
+        <span class="result-icon" id="resultado-icon"></span>
+        <span id="resultado-msg"></span>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Criptografia ponta a ponta &nbsp;·&nbsp; Chave privada nunca sai do servidor &nbsp;·&nbsp; <span>RSA-2048 · PSS ·
+      SHA-256</span>
+  </footer>
+
+  <script>
+    const API = 'http://localhost:8000';
+
+    // Configura o worker do PDF.js
+    if (typeof pdfjsLib !== 'undefined') {
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+
+    /* ---- DRAG & DROP ---- */
+    const zone = document.getElementById('upload-zone');
+
+    zone.addEventListener('dragover', e => {
+      e.preventDefault();
+      zone.classList.add('drag-over');
+    });
+    zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+    zone.addEventListener('drop', e => {
+      e.preventDefault();
+      zone.classList.remove('drag-over');
+      const file = e.dataTransfer?.files?.[0];
+      if (file) handleFile(file);
+    });
+
+    /* ---- LEITURA DO ARQUIVO ---- */
+    async function handleFile(file) {
+      if (!file) return;
+
+      const ext = file.name.split('.').pop().toLowerCase();
+      const allowedText = ['txt', 'md', 'csv', 'log', 'json', 'xml', 'html'];
+      const allowedPdf = ['pdf'];
+
+      if (!allowedText.includes(ext) && !allowedPdf.includes(ext)) {
+        alert(`Tipo de arquivo não suportado: .${ext}\nUse: ${[...allowedText, ...allowedPdf].join(', ')}`);
+        return;
+      }
+
+      // Exibe info do arquivo
+      document.getElementById('file-info-name').textContent = file.name;
+      document.getElementById('file-info-size').textContent = formatBytes(file.size);
+      document.getElementById('file-info').classList.add('visible');
+
+      if (allowedPdf.includes(ext)) {
+        await lerPDF(file);
+      } else {
+        await lerTexto(file);
+      }
+    }
+
+    function lerTexto(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => {
+          document.getElementById('doc-input').value = e.target.result;
+          resolve();
+        };
+        reader.onerror = () => reject(new Error('Erro ao ler o arquivo.'));
+        reader.readAsText(file, 'UTF-8');
+      });
+    }
+
+    async function lerPDF(file) {
+      const pdfLoadingEl = document.getElementById('pdf-loading');
+      pdfLoadingEl.classList.add('visible');
+
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+        let textoCompleto = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          const texto = content.items.map(item => item.str).join(' ');
+          textoCompleto += `[Página ${i}]\n${texto}\n\n`;
+        }
+
+        document.getElementById('doc-input').value = textoCompleto.trim();
+      } catch (err) {
+        alert('Erro ao extrair texto do PDF: ' + err.message);
+      } finally {
+        pdfLoadingEl.classList.remove('visible');
+      }
+    }
+
+    function removerArquivo() {
+      document.getElementById('file-info').classList.remove('visible');
+      document.getElementById('file-input').value = '';
+      document.getElementById('doc-input').value = '';
+    }
+
+    function formatBytes(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    /* ---- helpers ---- */
+    function setLoading(btn, spinner, state) {
+      document.getElementById(btn).disabled = state;
+      const sp = document.getElementById(spinner);
+      sp.style.display = state ? 'block' : 'none';
+    }
+
+    function showResultado(valido, mensagem) {
+      const el = document.getElementById('resultado');
+      const icon = document.getElementById('resultado-icon');
+      const msg = document.getElementById('resultado-msg');
+      el.className = 'result visible ' + (valido ? 'success' : 'error');
+      icon.textContent = valido ? '✅' : '❌';
+      msg.textContent = mensagem;
+    }
+
+    /* ---- ASSINAR ---- */
+    async function assinar() {
+      const doc = document.getElementById('doc-input').value; // valor bruto — espaços fazem parte do documento
+      if (!doc.trim()) {
+        alert('Por favor, insira o conteúdo do documento antes de assinar.');
+        return;
+      }
+
+      setLoading('btn-assinar', 'spin-assinar', true);
+
+      try {
+        const res = await fetch(`${API}/assinar`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ documento: doc }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || 'Erro ao assinar o documento.');
+        }
+
+        const data = await res.json();
+        document.getElementById('sig-output').value = data.assinatura;
+        document.getElementById('sig-input').value = data.assinatura;
+        document.getElementById('assinatura-section').style.display = 'block';
+        document.getElementById('resultado').className = 'result';
+
+      } catch (err) {
+        alert('❌ Erro: ' + err.message);
+      } finally {
+        setLoading('btn-assinar', 'spin-assinar', false);
+      }
+    }
+
+    /* ---- VALIDAR ---- */
+    async function validar() {
+      const doc = document.getElementById('doc-input').value; // valor bruto — espaços fazem parte do documento
+      const sig = document.getElementById('sig-input').value.trim();
+
+      if (!doc.trim()) { alert('Insira o documento para validar.'); return; }
+      if (!sig) { alert('Cole a assinatura para validar.'); return; }
+
+      setLoading('btn-validar', 'spin-validar', true);
+
+      try {
+        const res = await fetch(`${API}/validar`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ documento: doc, assinatura: sig }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || 'Erro ao validar.');
+        }
+
+        const data = await res.json();
+        showResultado(data.valido, data.mensagem);
+
+      } catch (err) {
+        showResultado(false, 'Erro na requisição: ' + err.message);
+      } finally {
+        setLoading('btn-validar', 'spin-validar', false);
+      }
+    }
+
+    /* ---- LIMPAR ---- */
+    function limpar() {
+      document.getElementById('doc-input').value = '';
+      document.getElementById('sig-output').value = '';
+      document.getElementById('sig-input').value = '';
+      document.getElementById('assinatura-section').style.display = 'none';
+      document.getElementById('resultado').className = 'result';
+      removerArquivo();
+    }
+
+    /* ---- COPIAR ---- */
+    async function copiarAssinatura() {
+      const sig = document.getElementById('sig-output').value;
+      if (!sig) return;
+      await navigator.clipboard.writeText(sig);
+      const btn = document.querySelector('.copy-btn');
+      btn.textContent = '✅ Copiado!';
+      setTimeout(() => btn.textContent = '📋 Copiar', 1800);
+    }
+  </script>
+</body>
+
+</html>
